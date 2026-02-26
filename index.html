@@ -1895,8 +1895,8 @@ function hideSplash(){
   s.classList.add('hide');
   setTimeout(()=>{s.style.display='none';},400);
 }
-setTimeout(hideSplash,1800);
-window.addEventListener('load',()=>setTimeout(hideSplash,200));
+setTimeout(hideSplash,100);
+window.addEventListener('load',()=>hideSplash());
 
 renderStratGrid();
 updateJBadge();
