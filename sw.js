@@ -1,18 +1,41 @@
-const CACHE='mr-trader-v5';
-const CORE=['./','./index.html','./manifest.json','./icon-192.png','./icon-512.png'];
-self.addEventListener('install',e=>{
-  e.waitUntil(caches.open(CACHE).then(c=>Promise.allSettled(CORE.map(u=>c.add(u)))).then(()=>self.skipWaiting()));
+// Force update — old SW clear karo
+const CACHE = 'mr-trader-v6';
+const CORE = ['./', './index.html', './manifest.json'];
+
+self.addEventListener('install', e => {
+  // Immediately take control — no waiting
+  self.skipWaiting();
+  e.waitUntil(
+    caches.open(CACHE).then(c => 
+      Promise.allSettled(CORE.map(u => c.add(u)))
+    )
+  );
 });
-self.addEventListener('activate',e=>{
-  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    // Delete ALL old caches
+    caches.keys().then(keys => 
+      Promise.all(keys.map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
+  );
 });
-self.addEventListener('fetch',e=>{
-  if(e.request.method!=='GET')return;
-  e.respondWith(caches.match(e.request).then(cached=>{
-    const net=fetch(e.request).then(resp=>{
-      if(resp&&resp.ok&&resp.type!=='opaque'){caches.open(CACHE).then(c=>c.put(e.request,resp.clone()));}
-      return resp;
-    }).catch(()=>null);
-    return cached||(net.catch(()=>caches.match('./index.html')));
-  }));
+
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
+  
+  // Network first — fresh content hamesha
+  e.respondWith(
+    fetch(e.request)
+      .then(resp => {
+        if (resp && resp.ok) {
+          const clone = resp.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+        }
+        return resp;
+      })
+      .catch(() => caches.match(e.request)
+        .then(cached => cached || caches.match('./index.html'))
+      )
+  );
 });
